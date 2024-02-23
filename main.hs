@@ -3,6 +3,7 @@ import Data.Char
 import Data.List
 import System.Environment
 import Types (Literal (..), Token (..), TokenType (..))
+import Data.Maybe
 
 main = do
   args <- getArgs
@@ -13,7 +14,7 @@ main = do
 runFile :: String -> IO ()
 runFile filename = do
   contents <- readFile filename
-  print $ map lexeme $ scanTokens contents
+  print $ map tokenType $ scanTokens contents
 
 scanTokens :: String -> [Token]
 scanTokens [] = [createToken EOF [] 0 Nothing]
@@ -39,7 +40,7 @@ scanTokens code@(x : y : ys) = case x of
       where
         (str, _ : rest) = span (/= '"') code
 
-    addNumber code = createToken STRING strNum 0 (Just $ NumberLiteral num) : scanTokens rest
+    addNumber code = createToken NUMBER strNum 0 (Just $ NumberLiteral num) : scanTokens rest
       where
         (preDecimal, other) = span isDigit code
         (postDecimal, rest) =
@@ -52,10 +53,30 @@ scanTokens code@(x : y : ys) = case x of
                     else ('.' : digits, r)
         strNum = preDecimal ++ postDecimal
         num = stringToDouble strNum
-    
+
     isAlphaOrUnderScore x = isAlpha x || x == '_'
-    addIdentifier code = createToken IDENTIFIER iden 0 Nothing : scanTokens rest
+    addIdentifier code = createToken (fromMaybe IDENTIFIER (keywordType iden)) iden 0 Nothing : scanTokens rest
       where (iden, rest) = span (\x -> isAlphaOrUnderScore x || isDigit x) code
+            keywordType str = case str of
+              "and" -> Just AND
+              "class" -> Just CLASS
+              "print" -> Just PRINT
+              "or" -> Just OR
+              "if" -> Just IF
+              "else" -> Just ELSE
+              "while" -> Just WHILE
+              "for" -> Just FOR
+              "fun" -> Just FUN
+              "super" -> Just SUPER
+              "this" -> Just THIS
+              "var" -> Just VAR
+              "return" -> Just RETURN
+              "true" -> Just TRUE
+              "false" -> Just FALSE
+              "nil" -> Just NIL
+              _ -> Nothing
+
+
 
 createToken tok lex lineNumber lit = Token {tokenType = tok, lexeme = lex, literal = lit, line = lineNumber}
 
