@@ -4,31 +4,34 @@ import Types (Token (..), TokenType (..))
 import Data.Char
 import Data.Maybe
 
-scanTokens :: String -> [Token]
-scanTokens [] = [createToken EOF [] 0 Nothing]
-scanTokens [x] = if isSpace x then scanTokens [] else charToken x : scanTokens []
-scanTokens code@(x : y : ys) = case x of
-  '!' -> if y == '=' then char2Token BANG_EQUAL else charTok
-  '=' -> if y == '=' then char2Token EQUAL_EQUAL else charTok
-  '<' -> if y == '=' then char2Token LESS_EQUAL else charTok
-  '>' -> if y == '=' then char2Token GREATER_EQUAL else charTok
-  '/' -> if y == '/' then (scanTokens . consumeComment) ys else charTok
+scanTokens :: Int -> String -> [Token]
+scanTokens line [] = [createToken EOF [] line Nothing]
+scanTokens line [x] = if isSpace x then scanTokens line [] else charToken line x : scanTokens line []
+scanTokens line code@(x : y : ys) = case x of
+  '!' -> if y == '=' then add2CharToken BANG_EQUAL else add1CharToken
+  '=' -> if y == '=' then add2CharToken EQUAL_EQUAL else add1CharToken
+  '<' -> if y == '=' then add2CharToken LESS_EQUAL else add1CharToken
+  '>' -> if y == '=' then add2CharToken GREATER_EQUAL else add1CharToken
+  '/' -> if y == '/' then (scanTokens line . consumeComment) ys else add1CharToken
   '"' -> addString (y : ys)
   _
-    | isSpace x -> scanTokens (y : ys)
+    | isSpace x && x /= '\n' -> scanTokens line (y : ys)
+    | x == '\n' -> scanTokens (line + 1) (y : ys)
     | isDigit x -> addNumber code
     | isAlphaOrUnderScore x || x == '_' -> addIdentifier code
-    | otherwise -> charTok
+    | otherwise -> add1CharToken
   where
-    char2Token tok = createNonLiteralToken tok [x, y] : scanTokens ys
-    charTok = charToken x : scanTokens (y : ys)
+    add2CharToken tok = createToken tok [x, y] line Nothing : scanTokens line ys
+    add1CharToken = charToken line x : scanTokens line (y : ys)
     consumeComment = dropWhile (/= '\n')
 
-    addString code = createToken STRING str 0 Nothing : scanTokens rest
+    addString code = if null rest
+        then error ("Line " ++ show line ++ ": unterminated string at line")
+        else createToken STRING str line Nothing : scanTokens (line + length (filter (=='\n') str)) (tail rest)
       where
-        (str, _ : rest) = span (/= '"') code
+        (str, rest) = span (/= '"') code
 
-    addNumber code = createToken NUMBER strNum 0 (Just num) : scanTokens rest
+    addNumber code = createToken NUMBER strNum line (Just num) : scanTokens line rest
       where
         (preDecimal, other) = span isDigit code
         (postDecimal, rest) =
@@ -37,14 +40,14 @@ scanTokens code@(x : y : ys) = case x of
             else -- parse out decimal part of number
 
               let (digits, r) = span isDigit (tail other)
-               in if null digits -- no decimal components
+               in if null digits -- no decimal component
                     then ([], '.' : r)
                     else ('.' : digits, r)
         strNum = preDecimal ++ postDecimal
         num = stringToDouble strNum
 
     isAlphaOrUnderScore x = isAlpha x || x == '_'
-    addIdentifier code = createToken (fromMaybe IDENTIFIER (keywordType iden)) iden 0 Nothing : scanTokens rest
+    addIdentifier code = createToken (fromMaybe IDENTIFIER (keywordType iden)) iden line Nothing : scanTokens line rest
       where
         (iden, rest) = span (\x -> isAlphaOrUnderScore x || isDigit x) code
         keywordType str = case str of
@@ -66,11 +69,11 @@ scanTokens code@(x : y : ys) = case x of
           "nil" -> Just NIL
           _ -> Nothing
 
+createToken :: TokenType -> String -> Int -> Maybe Double -> Token
 createToken tok lex lineNumber num = Token {tokenType = tok, lexeme = lex, number = num, line = lineNumber}
 
-createNonLiteralToken tok lex = createToken tok lex 0 Nothing
-
-charToken x = case x of
+charToken :: Int -> Char -> Token
+charToken line x = case x of
   '(' -> create LEFT_PAREN
   ')' -> create RIGHT_PAREN
   '{' -> create LEFT_BRACE
@@ -86,8 +89,8 @@ charToken x = case x of
   '<' -> create LESS
   '>' -> create GREATER
   '/' -> create SLASH
-  r -> error $ "Character `" ++ [r] ++ "` not recognized"
+  r -> error $ "Line " ++ show line ++ ": character `" ++ [r] ++ "` not recognized"
   where
-    create tok = createNonLiteralToken tok [x]
+    create tok = createToken tok [x] line Nothing
 
 stringToDouble x = read x :: Double
