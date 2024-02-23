@@ -1,9 +1,9 @@
 import Control.Monad (forM_)
 import Data.Char
 import Data.List
+import Data.Maybe
 import System.Environment
 import Types (Literal (..), Token (..), TokenType (..))
-import Data.Maybe
 
 main = do
   args <- getArgs
@@ -47,6 +47,7 @@ scanTokens code@(x : y : ys) = case x of
           if null other -- file ends with number
             then ([], other)
             else -- parse out decimal part of number
+
               let (digits, r) = span isDigit (tail other)
                in if null digits -- no decimal components
                     then ([], '.' : r)
@@ -56,27 +57,26 @@ scanTokens code@(x : y : ys) = case x of
 
     isAlphaOrUnderScore x = isAlpha x || x == '_'
     addIdentifier code = createToken (fromMaybe IDENTIFIER (keywordType iden)) iden 0 Nothing : scanTokens rest
-      where (iden, rest) = span (\x -> isAlphaOrUnderScore x || isDigit x) code
-            keywordType str = case str of
-              "and" -> Just AND
-              "class" -> Just CLASS
-              "print" -> Just PRINT
-              "or" -> Just OR
-              "if" -> Just IF
-              "else" -> Just ELSE
-              "while" -> Just WHILE
-              "for" -> Just FOR
-              "fun" -> Just FUN
-              "super" -> Just SUPER
-              "this" -> Just THIS
-              "var" -> Just VAR
-              "return" -> Just RETURN
-              "true" -> Just TRUE
-              "false" -> Just FALSE
-              "nil" -> Just NIL
-              _ -> Nothing
-
-
+      where
+        (iden, rest) = span (\x -> isAlphaOrUnderScore x || isDigit x) code
+        keywordType str = case str of
+          "and" -> Just AND
+          "class" -> Just CLASS
+          "print" -> Just PRINT
+          "or" -> Just OR
+          "if" -> Just IF
+          "else" -> Just ELSE
+          "while" -> Just WHILE
+          "for" -> Just FOR
+          "fun" -> Just FUN
+          "super" -> Just SUPER
+          "this" -> Just THIS
+          "var" -> Just VAR
+          "return" -> Just RETURN
+          "true" -> Just TRUE
+          "false" -> Just FALSE
+          "nil" -> Just NIL
+          _ -> Nothing
 
 createToken tok lex lineNumber lit = Token {tokenType = tok, lexeme = lex, literal = lit, line = lineNumber}
 
