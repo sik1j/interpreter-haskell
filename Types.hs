@@ -1,6 +1,5 @@
 module Types
   ( TokenType(..),
-    Literal(..),
     Token(..)
   ) 
 where
@@ -25,14 +24,12 @@ data TokenType =
 
   |EOF  deriving(Eq, Show)
 
-data Literal = StringLiteral String | NumberLiteral Double deriving(Show)
-
 data Token = Token
   { tokenType :: TokenType,
     lexeme :: String,
-    literal :: Maybe Literal,
+    number :: Maybe Double,
     line :: Int
   }
 
 instance Show Token where
-  show Token {tokenType = tok, lexeme = lex, literal = lit} = show tok ++ " " ++ lex ++ show lit
+  show Token {tokenType = tok, lexeme = lex, number = lit} = show tok ++ " " ++ lex ++ show lit

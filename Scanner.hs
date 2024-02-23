@@ -1,7 +1,6 @@
 module Scanner where
 
-
-import Types (Token (..), TokenType (..), Literal (..))
+import Types (Token (..), TokenType (..))
 import Data.Char
 import Data.Maybe
 
@@ -25,11 +24,11 @@ scanTokens code@(x : y : ys) = case x of
     charTok = charToken x : scanTokens (y : ys)
     consumeComment = dropWhile (/= '\n')
 
-    addString code = createToken STRING str 0 (Just $ StringLiteral str) : scanTokens rest
+    addString code = createToken STRING str 0 Nothing : scanTokens rest
       where
         (str, _ : rest) = span (/= '"') code
 
-    addNumber code = createToken NUMBER strNum 0 (Just $ NumberLiteral num) : scanTokens rest
+    addNumber code = createToken NUMBER strNum 0 (Just num) : scanTokens rest
       where
         (preDecimal, other) = span isDigit code
         (postDecimal, rest) =
@@ -67,7 +66,7 @@ scanTokens code@(x : y : ys) = case x of
           "nil" -> Just NIL
           _ -> Nothing
 
-createToken tok lex lineNumber lit = Token {tokenType = tok, lexeme = lex, literal = lit, line = lineNumber}
+createToken tok lex lineNumber num = Token {tokenType = tok, lexeme = lex, number = num, line = lineNumber}
 
 createNonLiteralToken tok lex = createToken tok lex 0 Nothing
 
