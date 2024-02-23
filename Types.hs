@@ -1,5 +1,6 @@
 module Types
-  ( TokenType,
+  ( TokenType(..),
+    Literal(..),
     Token(..)
   ) 
 where
@@ -22,13 +23,13 @@ data TokenType =
   |AND| CLASS| ELSE| FALSE| FUN| FOR| IF| NIL| OR|
   PRINT| RETURN| SUPER| THIS| TRUE| VAR| WHILE
 
-  |EOF  deriving(Show)
+  |EOF  deriving(Eq, Show)
 
-data Literal = String | Double deriving(Show)
+data Literal = StringLiteral String | NumberLiteral Double deriving(Show)
 
 data Token = Token
   { tokenType :: TokenType,
     lexeme :: String,
-    literal :: Literal,
+    literal :: Maybe Literal,
     line :: Int
   }
