@@ -33,3 +33,6 @@ data Token = Token
     literal :: Maybe Literal,
     line :: Int
   }
+
+instance Show Token where
+  show Token {tokenType = tok, lexeme = lex, literal = lit} = show tok ++ " " ++ lex ++ show lit
