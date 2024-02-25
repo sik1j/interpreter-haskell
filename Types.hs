@@ -2,7 +2,12 @@ module Types
   ( TokenType(..),
     Token(..),
     Unary(..),
-    Expression(..)
+    Expression(..),
+    Primary(..),
+    Factor(..),
+    Term(..),
+    Comparison(..),
+    Equality(..)
   ) 
 where
 
@@ -37,30 +42,43 @@ instance Show Token where
   show Token {tokenType = tok, lexeme = lex, number = lit} = show tok ++ " " ++ lex ++ show lit
 
 data Expression = 
-  Equality Equality
+  EqualityExpr Equality |
+  ComparisonExpr Comparison |
+  TermExpr Term |
+  FactorExpr Factor |
+  UnaryExpr Unary |
+  PrimaryExpr Primary
+  deriving (Show)
+
 
 data Equality = 
   Comparison Comparison | EqualEqual Comparison Comparison | NotEqual Comparison Comparison
+  deriving (Show)
 
 data Comparison =
   Term Term | Greater Term Term | GreaterEqual Term Term | Less Term Term | LessEqual Term Term
+  deriving (Show)
 
 data Term = 
   Factor Factor | Plus Factor Factor | MinusBinary Factor Factor
+  deriving (Show)
 
 data Factor = 
   Unary Unary | Divide Unary Unary | Multiply Unary Unary
+  deriving (Show)
 
 data Unary = 
   MinusUnary Unary | Bang Unary | 
   Primary Primary
+  deriving (Show)
 
 data Primary = 
   Number Double |
   String String |
-  Boolean Bool |
+  Bool Bool |
   Nil |
   Grouping Expression
+  deriving (Show)
 
 parenthesize :: String -> String 
 parenthesize str = "(" ++ str ++ ")"
