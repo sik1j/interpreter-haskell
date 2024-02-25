@@ -1,16 +1,25 @@
 import Types
 import Scanner
+import Parser
 import System.Environment
+import Control.Monad
 main = do
-  -- let expr = Binary (Unary MinusUnary (Literal $ Number 123)) Star (Grouping (Literal $ Number 45.67))
-  -- let expr = Literal (NUMBER_LIT 1.0)
-  -- print expr
   args <- getArgs
   if null args
-    then putStrLn "Please provide a .lox filename"
+    then runPrompt
     else runFile $ head args
+
+runPrompt :: IO ()
+runPrompt = forever $ do
+  putStr "> "
+  line <- getLine
+  let tokens = scanTokens line
+  print $ map tokenType tokens
+  print $ parseTokens tokens
 
 runFile :: String -> IO ()
 runFile filename = do
   contents <- readFile filename
-  print $ map (\x -> (lexeme x, line x)) $ scanTokens 1 contents
+  let tokens = scanTokens contents
+  print $ map tokenType tokens
+  print $ parseTokens tokens
