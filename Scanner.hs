@@ -34,16 +34,12 @@ scanTokens line code@(x : y : ys) = case x of
     addNumber code = createToken NUMBER strNum line (Just num) : scanTokens line rest
       where
         (preDecimal, other) = span isDigit code
-        (postDecimal, rest) =
-          if null other -- file ends with number
-            then ([], other)
-            else -- parse out decimal part of number
-
-              let (digits, r) = span isDigit (tail other)
-               in if null digits -- no decimal component
-                    then ([], '.' : r)
-                    else ('.' : digits, r)
-        strNum = preDecimal ++ postDecimal
+        (postDecimal, rest) = case other of
+          [] -> ([], [])
+          (x:xs) -> if x == '.' then span isDigit xs else ([], other)
+        strNum = case postDecimal of
+          [] -> preDecimal
+          _ -> preDecimal ++ "." ++ postDecimal
         num = stringToDouble strNum
 
     isAlphaOrUnderScore x = isAlpha x || x == '_'
@@ -89,7 +85,9 @@ charToken line x = case x of
   '<' -> create LESS
   '>' -> create GREATER
   '/' -> create SLASH
-  r -> error $ "Line " ++ show line ++ ": character `" ++ [r] ++ "` not recognized"
+  _ 
+    | isDigit x -> createToken NUMBER [x] line (Just $ stringToDouble [x])
+    | otherwise -> error $ "Line " ++ show line ++ ": character `" ++ [x] ++ "` not recognized"
   where
     create tok = createToken tok [x] line Nothing
 
